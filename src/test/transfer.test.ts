@@ -4,7 +4,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { ResolvedFile } from '../selection';
-import { transferFiles } from '../transfer';
+import { chooseConflictForPolicy, transferFiles } from '../transfer';
 
 suite('Transfer', () => {
 	let root: string;
@@ -15,6 +15,31 @@ suite('Transfer', () => {
 
 	teardown(async () => {
 		await fs.rm(root, { recursive: true, force: true });
+	});
+
+	test('uses the configured replace policy without prompting', async () => {
+		let prompted = false;
+		const action = await chooseConflictForPolicy('replace', async () => {
+			prompted = true;
+			return 'cancel';
+		});
+		assert.strictEqual(action, 'replace');
+		assert.strictEqual(prompted, false);
+	});
+
+	test('uses the configured skip policy without prompting', async () => {
+		let prompted = false;
+		const action = await chooseConflictForPolicy('skip', async () => {
+			prompted = true;
+			return 'cancel';
+		});
+		assert.strictEqual(action, 'skip');
+		assert.strictEqual(prompted, false);
+	});
+
+	test('uses the prompt policy to select a conflict action', async () => {
+		const action = await chooseConflictForPolicy('prompt', async () => 'skip');
+		assert.strictEqual(action, 'skip');
 	});
 
 	test('keeps the first case-insensitive collision when skipping', async () => {
@@ -30,6 +55,22 @@ suite('Transfer', () => {
 		assert.strictEqual(result.completed, 1);
 		assert.strictEqual(result.skipped, 1);
 		assert.strictEqual(await fs.readFile(path.join(root, 'Readme.md'), 'utf8'), 'Readme.md');
+	});
+
+	test('skips an existing collision winner when skipping', async () => {
+		const files = await createSources(['Readme.md', 'README.md']);
+		await fs.writeFile(path.join(root, 'Readme.md'), 'existing result');
+		const result = await transferFiles({
+			destination: root,
+			files,
+			isCancellationRequested: () => false,
+			chooseConflict: async () => 'skip',
+			report: () => undefined,
+			log: () => undefined,
+		});
+		assert.strictEqual(result.completed, 0);
+		assert.strictEqual(result.skipped, 2);
+		assert.strictEqual(await fs.readFile(path.join(root, 'Readme.md'), 'utf8'), 'existing result');
 	});
 
 	test('keeps the last case-insensitive collision when replacing', async () => {

@@ -2,7 +2,7 @@
   "name": "workspace-downloads",
   "displayName": "Workspace Downloads",
   "description": "Repeatable batch downloads of selected workspace files to your local machine, from remote or local VS Code workspaces.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "publisher": "jan-tielens",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -58,6 +58,11 @@
         "command": "workspace-downloads.clearRememberedValues",
         "title": "Clear Remembered Download Answers",
         "category": "Workspace Downloads"
+      },
+      {
+        "command": "workspace-downloads.configureConflictPolicy",
+        "title": "Configure Download Conflict Policy",
+        "category": "Workspace Downloads"
       }
     ],
     "configuration": {
@@ -76,6 +81,23 @@
           "scope": "resource",
           "order": 2,
           "markdownDescription": "Optional local destination folder on this desktop client. When empty, each download asks for a folder and remembers the last choice. Do not commit a machine-specific destination to shared workspace settings."
+        },
+        "workspaceDownloads.conflictPolicy": {
+          "type": "string",
+          "default": "prompt",
+          "enum": [
+            "prompt",
+            "replace",
+            "skip"
+          ],
+          "enumDescriptions": [
+            "Ask whether to replace or skip when destination conflicts are found.",
+            "Replace all destination conflicts without asking.",
+            "Skip all destination conflicts without asking."
+          ],
+          "scope": "resource",
+          "order": 3,
+          "markdownDescription": "Controls how existing destination files and output-path collisions are handled. Use the **Workspace Downloads: Configure Download Conflict Policy** command to open this setting directly."
         }
       }
     }

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { selectSourceFolder, stateKey, workspaceSetting } from './command-helpers';
 import { parseAdHocEntries, parseConfiguredEntries, resolveEntries } from './selection';
-import { ConflictAction, transferFiles } from './transfer';
+import { chooseConflictForPolicy, ConflictAction, ConflictPolicy, transferFiles } from './transfer';
 
 const output = vscode.window.createOutputChannel('Workspace Downloads');
 let exportInProgress = false;
@@ -19,6 +19,10 @@ export function activate(context: vscode.ExtensionContext): void {
 	context.subscriptions.push(vscode.commands.registerCommand(
 		'workspace-downloads.clearRememberedValues',
 		() => clearRememberedValues(context),
+	));
+	context.subscriptions.push(vscode.commands.registerCommand(
+		'workspace-downloads.configureConflictPolicy',
+		() => vscode.commands.executeCommand('workbench.action.openWorkspaceSettings', 'workspaceDownloads.conflictPolicy'),
 	));
 }
 
@@ -134,6 +138,8 @@ async function startDownload(
 	if (!destination) {
 		return;
 	}
+	const configuration = vscode.workspace.getConfiguration('workspaceDownloads', sourceFolder.uri);
+	const conflictPolicy = workspaceSetting<ConflictPolicy>(configuration.inspect<ConflictPolicy>('conflictPolicy')) ?? 'prompt';
 	await onStart();
 	exportInProgress = true;
 	try {
@@ -147,7 +153,7 @@ async function startDownload(
 				destination,
 				files: resolution.files,
 				isCancellationRequested: () => token.isCancellationRequested,
-				chooseConflict,
+				chooseConflict: () => chooseConflictForPolicy(conflictPolicy, chooseConflict),
 				report: (update) => progress.report({
 					message: `${update.relativePath} (${update.completed} copied, ${update.skipped} skipped, ${update.failed} failed)`,
 				}),
@@ -218,7 +224,7 @@ async function chooseDestination(value: string): Promise<string | undefined> {
 
 async function chooseConflict(): Promise<ConflictAction> {
 	const action = await vscode.window.showWarningMessage(
-		'Destination file conflicts were found. Your choice applies to all remaining conflicts in this export.',
+		'Destination file conflicts were found. Your choice applies to all remaining conflicts in this export. Change the default in workspaceDownloads.conflictPolicy.',
 		{ modal: true },
 		'Replace All',
 		'Skip All',

@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 import { ResolvedFile } from './selection';
 
 export type ConflictAction = 'replace' | 'skip' | 'cancel';
+export type ConflictPolicy = Exclude<ConflictAction, 'cancel'> | 'prompt';
 
 export interface TransferUpdate {
 	readonly relativePath: string;
@@ -35,6 +36,13 @@ interface PlannedFile extends ResolvedFile {
 	readonly collisionWinner: boolean;
 }
 
+export function chooseConflictForPolicy(
+	policy: ConflictPolicy,
+	chooseConflict: () => Promise<ConflictAction>,
+): Promise<ConflictAction> {
+	return policy === 'prompt' ? chooseConflict() : Promise.resolve(policy);
+}
+
 export async function transferFiles(options: TransferOptions): Promise<TransferResult> {
 	const destination = await fs.realpath(options.destination);
 	const plannedFiles = await planFiles(destination, options.files, options.log);
@@ -59,7 +67,7 @@ export async function transferFiles(options: TransferOptions): Promise<TransferR
 			if (policy === 'cancel') {
 				return { completed, skipped, failed, cancelled: true };
 			}
-			if (policy === 'skip' && (!file.collision || !file.collisionWinner)) {
+			if (policy === 'skip' && (exists || !file.collision || !file.collisionWinner)) {
 				skipped++;
 				report(options, file.relativePath, completed, skipped, failed);
 				continue;
