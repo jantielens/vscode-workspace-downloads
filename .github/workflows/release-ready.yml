@@ -8,7 +8,9 @@ on:
       - completed
 
 permissions:
+  contents: read
   issues: write
+  pull-requests: read
 
 jobs:
   comment-on-successful-pr:
