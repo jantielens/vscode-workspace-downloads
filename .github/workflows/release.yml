@@ -1,0 +1,65 @@
+name: Marketplace Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing annotated vX.Y.Z tag to publish
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - name: Verify annotated release tag and version
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          [[ "$(git cat-file -t "${TAG}^{tag}")" == "tag" ]]
+          [[ "$(node -p "require('./package.json').version")" == "${TAG#v}" ]]
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run compile
+      - run: xvfb-run -a npm test
+      - run: npm run package:vsix
+      - name: Verify version is unpublished
+        env:
+          VERSION: ${{ inputs.tag }}
+        run: |
+          if npx vsce show jan-tielens.workspace-downloads --json > marketplace.json; then
+            ! grep -Fq "${VERSION#v}" marketplace.json
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: workspace-downloads-vsix
+          path: '*.vsix'
+          if-no-files-found: error
+  publish-and-release:
+    needs: verify-and-package
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: workspace-downloads-vsix
+      - run: npx @vscode/vsce publish --packagePath ./*.vsix -p "$VSCE_PAT"
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          files: '*.vsix'
