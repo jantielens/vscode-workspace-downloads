@@ -2,6 +2,13 @@
 
 All notable changes are documented here.
 
+## 1.0.1 - 2026-09-02
+
+### Changed
+
+* Add a Marketplace icon, improve discoverability, and clarify batch downloads
+	from local and remote workspaces
+
 ## 1.0.0 - 2026-09-02
 
 ### Added
