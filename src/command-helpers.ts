@@ -8,6 +8,21 @@ export interface WorkspaceSettingInspection<T> {
 	readonly workspaceValue?: T;
 }
 
+export interface TaskDownload {
+	readonly task: string;
+	readonly files: string;
+	readonly destination: string;
+	readonly conflictPolicy: 'replace' | 'skip' | 'prompt';
+}
+
+export function reserveExport(state: { inProgress: boolean }): boolean {
+	if (state.inProgress) {
+		return false;
+	}
+	state.inProgress = true;
+	return true;
+}
+
 export type SourceFolderSelection =
 	| { readonly kind: 'selected'; readonly folder: vscode.WorkspaceFolder }
 	| { readonly kind: 'cancelled' }
@@ -44,6 +59,29 @@ export function workspaceSetting<T>(inspection: WorkspaceSettingInspection<T> | 
 	return inspection?.workspaceFolderValue ?? inspection?.workspaceValue;
 }
 
+export function taskDownloadFor(
+	value: unknown,
+	taskName: string,
+): TaskDownload | undefined {
+	if (!Array.isArray(value)) {
+		return undefined;
+	}
+	return value.find((candidate): candidate is TaskDownload => (
+		isTaskDownload(candidate) && candidate.task === taskName
+	));
+}
+
 export function stateKey(folder: vscode.WorkspaceFolder, field: string): string {
 	return `adHoc.${folder.uri.toString()}.${field}`;
+}
+
+function isTaskDownload(value: unknown): value is TaskDownload {
+	if (typeof value !== 'object' || value === null) {
+		return false;
+	}
+	const candidate = value as Partial<TaskDownload>;
+	return typeof candidate.task === 'string' && candidate.task.length > 0
+		&& typeof candidate.files === 'string' && candidate.files.trim().length > 0
+		&& typeof candidate.destination === 'string' && candidate.destination.trim().length > 0
+		&& (candidate.conflictPolicy === 'replace' || candidate.conflictPolicy === 'skip' || candidate.conflictPolicy === 'prompt');
 }

@@ -66,6 +66,27 @@ For repeatable downloads, add file entries to your workspace or workspace-folder
 
 The destination is always a local path on the desktop client. Do not commit a machine-specific destination to shared workspace settings unless every collaborator uses the same local path and operating system.
 
+### Download After a Task
+
+Use `workspaceDownloads.taskDownloads` to download a task's output after a workspace-folder task exits successfully. Each task has its own file list, destination, and conflict policy.
+
+```json
+{
+	"workspaceDownloads.taskDownloads": [
+		{
+			"task": "Build firmware",
+			"files": "build/firmware.bin\nbuild/firmware.elf",
+			"destination": "C:\\temp\\firmware",
+			"conflictPolicy": "replace"
+		}
+	]
+}
+```
+
+Run the named task through VS Code. When it exits with code `0`, Workspace Downloads transfers that entry's files. Failed, terminated, global, and non-process tasks do not trigger downloads. A task entry is ignored when its files, destination, or conflict policy is invalid.
+
+For a complete build-script walkthrough, including PowerShell, Bash, and multiple task definitions, see [Download Build Artifacts After a Task](docs/task-downloads.md).
+
 ## Download Behavior
 
 Downloaded files retain their source-relative directory structure below the destination. When destination files already exist, or source paths differ only by letter casing, the default `prompt` policy lets you choose once per download whether to replace all, skip all, or cancel. The `replace` and `skip` policies handle all conflicts without a dialog. After a download, you can open the destination or view details in the `Workspace Downloads` output channel.

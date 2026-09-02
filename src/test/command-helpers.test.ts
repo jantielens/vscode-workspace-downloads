@@ -1,6 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
-import { selectSourceFolder, stateKey, workspaceSetting } from '../command-helpers';
+import { reserveExport, selectSourceFolder, stateKey, taskDownloadFor, workspaceSetting } from '../command-helpers';
 
 suite('Command helpers', () => {
 	const firstFolder = folder('first');
@@ -41,6 +41,29 @@ suite('Command helpers', () => {
 		assert.strictEqual(workspaceSetting({ defaultValue: 'default', globalValue: 'user' }), undefined);
 		assert.strictEqual(workspaceSetting({ workspaceValue: 'workspace', globalValue: 'user' }), 'workspace');
 		assert.strictEqual(workspaceSetting({ workspaceFolderValue: 'folder', workspaceValue: 'workspace' }), 'folder');
+	});
+
+	test('finds the download definition for an exact task label', () => {
+		const downloads = [
+			{ task: 'Build firmware', files: 'build/firmware.bin', destination: '/artifacts', conflictPolicy: 'replace' },
+			{ task: 'Export diagnostics', files: 'reports/*.json', destination: '/reports', conflictPolicy: 'skip' },
+		];
+		assert.deepStrictEqual(taskDownloadFor(downloads, 'Export diagnostics'), downloads[1]);
+		assert.strictEqual(taskDownloadFor(downloads, 'Build'), undefined);
+	});
+
+	test('ignores invalid task download definitions', () => {
+		assert.strictEqual(taskDownloadFor({ task: 'Build firmware' }, 'Build firmware'), undefined);
+		assert.strictEqual(taskDownloadFor([
+			{ task: 'Build firmware', files: 'build/firmware.bin', destination: '', conflictPolicy: 'replace' },
+		], 'Build firmware'), undefined);
+	});
+
+	test('reserves an export before asynchronous work begins', () => {
+		const state = { inProgress: false };
+		assert.strictEqual(reserveExport(state), true);
+		assert.strictEqual(reserveExport(state), false);
+		assert.strictEqual(state.inProgress, true);
 	});
 
 	test('scopes remembered ad hoc values by source workspace URI', () => {
