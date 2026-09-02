@@ -56,17 +56,18 @@ For repeatable downloads, add file entries to your workspace or workspace-folder
 ```json
 {
 	"workspaceDownloads.files": "reports/result.json\nlogs/*.txt",
-	"workspaceDownloads.destination": "C:\\temp\\project-a"
+	"workspaceDownloads.destination": "C:\\temp\\project-a",
+	"workspaceDownloads.conflictPolicy": "replace"
 }
 ```
 
-`workspaceDownloads.destination` is optional. When it is empty, the command prompts for a local destination and remembers the last one you entered for that workspace folder. Both settings have resource scope, so a folder in a multi-root workspace can define its own values. Only workspace and workspace-folder settings are used; user defaults are ignored.
+`workspaceDownloads.destination` is optional. When it is empty, the command prompts for a local destination and remembers the last one you entered for that workspace folder. `workspaceDownloads.conflictPolicy` defaults to `prompt`; set it to `replace` or `skip` for unattended handling of destination conflicts. You can also run `Workspace Downloads: Configure Download Conflict Policy` from the Command Palette to open this setting directly. All settings have resource scope, so a folder in a multi-root workspace can define its own values. Only workspace and workspace-folder settings are used; user defaults are ignored.
 
 The destination is always a local path on the desktop client. Do not commit a machine-specific destination to shared workspace settings unless every collaborator uses the same local path and operating system.
 
 ## Download Behavior
 
-Downloaded files retain their source-relative directory structure below the destination. When destination files already exist, or source paths differ only by letter casing, choose once per download whether to replace all, skip all, or cancel. After a download, you can open the destination or view details in the `Workspace Downloads` output channel.
+Downloaded files retain their source-relative directory structure below the destination. When destination files already exist, or source paths differ only by letter casing, the default `prompt` policy lets you choose once per download whether to replace all, skip all, or cancel. The `replace` and `skip` policies handle all conflicts without a dialog. After a download, you can open the destination or view details in the `Workspace Downloads` output channel.
 
 > [!NOTE]
 > Downloads read one complete source file into extension-host memory before writing it. Very large files can exhaust memory. Transfers can be cancelled between files, but not during a single file.
