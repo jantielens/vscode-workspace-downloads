@@ -36,6 +36,7 @@ Save a list of files and patterns in workspace settings, then run the configured
 * `Workspace Downloads: Download Workspace Files...` prompts for semicolon-separated workspace-relative paths or glob patterns and a local destination.
 * `Workspace Downloads: Download Configured Files` downloads the files and patterns saved in workspace settings.
 * `Workspace Downloads: Clear Remembered Download Answers` removes the values remembered for the ad hoc command.
+* `Workspace Downloads: Configure Download Conflict Policy` opens the workspace setting that controls whether destination conflicts prompt, replace, or skip.
 
 The ad hoc command remembers your most recent file list and destination for each workspace folder. In a multi-root workspace, select the source folder before paths are evaluated.
 
