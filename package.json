@@ -2,7 +2,7 @@
   "name": "workspace-downloads",
   "displayName": "Workspace Downloads",
   "description": "Download selected workspace files to a local desktop folder.",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "publisher": "jan-tielens",
   "license": "MIT",
   "repository": {
