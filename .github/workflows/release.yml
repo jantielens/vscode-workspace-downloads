@@ -1,108 +1,28 @@
 name: Marketplace Release
 
 on:
-  issue_comment:
-    types:
-      - created
+  workflow_dispatch:
 
 permissions:
-  checks: read
   contents: write
-  issues: write
-  pull-requests: write
 
 jobs:
-  acknowledge-release:
-    if: >-
-      github.event.issue.pull_request &&
-      github.event.comment.body == '/release' &&
-      github.event.comment.author_association == 'OWNER'
+  publish-and-release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: marketplace
     steps:
-      - name: Acknowledge release request
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const issueNumber = context.payload.issue.number;
-            await github.rest.reactions.createForIssueComment({
-              owner,
-              repo,
-              comment_id: context.payload.comment.id,
-              content: 'rocket',
-            });
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: issueNumber,
-              body: `Release requested. Verifying this pull request and its Continuous Integration result: ${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`,
-            });
-
-  verify-and-merge:
-    needs: acknowledge-release
-    if: >-
-      github.event.issue.pull_request &&
-      github.event.comment.body == '/release' &&
-      github.event.comment.author_association == 'OWNER'
-    runs-on: ubuntu-latest
-    outputs:
-      release_sha: ${{ steps.merge.outputs.sha || steps.pr.outputs.merge_sha }}
-      tag: ${{ steps.version.outputs.tag }}
-    steps:
-      - name: Verify pull request and continuous integration
-        id: pr
-        uses: actions/github-script@v8
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const pullNumber = context.payload.issue.number;
-            const { data: pullRequest } = await github.rest.pulls.get({
-              owner,
-              repo,
-              pull_number: pullNumber,
-            });
-
-            if (pullRequest.base.ref !== 'main') {
-              core.setFailed('The pull request must target main.');
-              return;
-            }
-            if (!pullRequest.head.repo || pullRequest.head.repo.full_name !== `${owner}/${repo}`) {
-              core.setFailed('Releases from fork pull requests are not supported.');
-              return;
-            }
-            if (pullRequest.state !== 'open' && !pullRequest.merged) {
-              core.setFailed('The pull request must be open or already merged.');
-              return;
-            }
-
-            const refs = [pullRequest.head.sha, pullRequest.merge_commit_sha].filter(Boolean);
-            let ciPassed = false;
-            for (const ref of refs) {
-              const { data } = await github.rest.checks.listForRef({
-                owner,
-                repo,
-                ref,
-                per_page: 100,
-              });
-              ciPassed ||= data.check_runs.some((check) =>
-                check.name === 'test-and-package'
-                && check.status === 'completed'
-                && check.conclusion === 'success'
-                && check.app?.slug === 'github-actions',
-              );
-            }
-            if (!ciPassed) {
-              core.setFailed('Continuous Integration must succeed for the current pull request before release.');
-              return;
-            }
-
-            core.setOutput('head_sha', pullRequest.head.sha);
-            core.setOutput('merge_sha', pullRequest.merge_commit_sha ?? '');
-            core.setOutput('is_open', String(pullRequest.state === 'open'));
       - uses: actions/checkout@v5
         with:
-          ref: ${{ steps.pr.outputs.head_sha }}
           fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run compile
+      - run: xvfb-run -a npm test
+      - run: npm run package:vsix
       - name: Select release tag
         id: version
         shell: bash
@@ -113,55 +33,10 @@ jobs:
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-      - name: Merge pull request
-        id: merge
-        if: steps.pr.outputs.is_open == 'true'
-        uses: actions/github-script@v8
-        env:
-          PULL_NUMBER: ${{ github.event.issue.number }}
-        with:
-          script: |
-            const { owner, repo } = context.repo;
-            const { data } = await github.rest.pulls.merge({
-              owner,
-              repo,
-              pull_number: Number(process.env.PULL_NUMBER),
-              merge_method: 'squash',
-            });
-            if (!data.merged) {
-              core.setFailed(data.message);
-              return;
-            }
-            core.setOutput('sha', data.sha);
-
-  publish-and-release:
-    needs: verify-and-merge
-    runs-on: ubuntu-latest
-    environment: marketplace
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.verify-and-merge.outputs.release_sha }}
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npm run compile
-      - run: xvfb-run -a npm test
-      - run: npm run package:vsix
       - name: Tag the release commit
         env:
-          TAG: ${{ needs.verify-and-merge.outputs.tag }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          git fetch --tags --force
-          if git rev-parse --verify --quiet "refs/tags/$TAG"; then
-            [[ "$(git rev-list -n 1 "$TAG")" == "$GITHUB_SHA" ]]
-            exit 0
-          fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git tag -a "$TAG" -m "Release $TAG"
@@ -172,5 +47,5 @@ jobs:
         run: npx @vscode/vsce publish --packagePath ./*.vsix --skip-duplicate -p "$VSCE_PAT"
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.verify-and-merge.outputs.tag }}
+          tag_name: ${{ steps.version.outputs.tag }}
           files: '*.vsix'
