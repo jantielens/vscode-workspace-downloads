@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   test-and-package:
@@ -27,3 +28,23 @@ jobs:
           name: workspace-downloads-vsix
           path: '*.vsix'
           if-no-files-found: error
+
+  release-ready:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'main' &&
+      needs.test-and-package.result == 'success'
+    needs: test-and-package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on the pull request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: context.payload.pull_request.number,
+              body: 'Continuous Integration passed. A repository owner can comment `/release` to merge this pull request into `main`, publish the extension, tag the release commit, and create the GitHub Release.',
+            });
