@@ -1,0 +1,45 @@
+name: Release Readiness
+
+on:
+  workflow_run:
+    workflows:
+      - Continuous Integration
+    types:
+      - completed
+
+permissions:
+  issues: write
+
+jobs:
+  comment-on-successful-pr:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on the pull request
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const run = context.payload.workflow_run;
+            const pullRequestRef = run.pull_requests[0];
+            if (run.event !== 'pull_request' || !pullRequestRef || pullRequestRef.base.ref !== 'main') {
+              core.notice('The successful workflow run is not for a pull request targeting main.');
+              return;
+            }
+
+            const { data: pullRequest } = await github.rest.pulls.get({
+              owner,
+              repo,
+              pull_number: pullRequestRef.number,
+            });
+            if (pullRequest.state !== 'open' || pullRequest.head.sha !== run.head_sha) {
+              core.notice('The pull request is no longer open at the successfully tested commit.');
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: pullRequest.number,
+              body: 'Continuous Integration passed. A repository owner can comment `/release` to merge this pull request into `main`, publish the extension, tag the release commit, and create the GitHub Release.',
+            });
