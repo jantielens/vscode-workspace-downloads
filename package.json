@@ -2,7 +2,7 @@
   "name": "workspace-downloads",
   "displayName": "Workspace Downloads",
   "description": "Repeatable batch downloads of selected workspace files to your local machine, from remote or local VS Code workspaces.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "jan-tielens",
   "license": "MIT",
   "icon": "media/icon.png",
@@ -40,7 +40,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
@@ -98,6 +100,45 @@
           "scope": "resource",
           "order": 3,
           "markdownDescription": "Controls how existing destination files and output-path collisions are handled. Use the **Workspace Downloads: Configure Download Conflict Policy** command to open this setting directly."
+        },
+        "workspaceDownloads.taskDownloads": {
+          "type": "array",
+          "default": [],
+          "scope": "resource",
+          "order": 4,
+          "items": {
+            "type": "object",
+            "required": [
+              "task",
+              "files",
+              "destination",
+              "conflictPolicy"
+            ],
+            "properties": {
+              "task": {
+                "type": "string",
+                "description": "Exact workspace-folder task label that triggers this download after a successful exit."
+              },
+              "files": {
+                "type": "string",
+                "description": "Workspace-relative files or glob patterns, one per line."
+              },
+              "destination": {
+                "type": "string",
+                "description": "Local destination folder on this desktop client."
+              },
+              "conflictPolicy": {
+                "type": "string",
+                "enum": [
+                  "prompt",
+                  "replace",
+                  "skip"
+                ],
+                "description": "How to handle existing destination files and output-path collisions."
+              }
+            }
+          },
+          "markdownDescription": "Downloads to run after named workspace-folder tasks exit successfully. Each entry requires an exact task label, newline-separated workspace-relative files or glob patterns, a local destination, and a conflict policy."
         }
       }
     }

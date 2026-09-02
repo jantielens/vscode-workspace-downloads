@@ -2,6 +2,13 @@
 
 All notable changes are documented here.
 
+## 1.2.0 - 2026-09-02
+
+### Added
+
+* Trigger task-specific downloads after named workspace tasks succeed
+* Document build-script downloads with task configuration examples
+
 ## 1.1.0 - 2026-09-02
 
 ### Added
