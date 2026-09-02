@@ -3,8 +3,10 @@
 ## Product Definition
 
 Build and publish the open-source VS Code desktop extension **Workspace
-Downloads**. It downloads selected files from the currently open workspace to
-a chosen folder on the local desktop client.
+Downloads**. Its product promise is repeatable batch downloads of selected
+workspace files to the local desktop client, from remote or local VS Code
+workspaces. It supports several exact paths or glob patterns in each download
+and workspace-scoped configuration for recurring exports.
 
 The same workflow must support local folders and remote workspaces. Supported
 remote workspace types are Remote SSH, Dev Containers, WSL, Remote Tunnels, and
