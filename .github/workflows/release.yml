@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Acknowledge release request
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: Verify pull request and continuous integration
         id: pr
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
@@ -116,7 +116,7 @@ jobs:
       - name: Merge pull request
         id: merge
         if: steps.pr.outputs.is_open == 'true'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           PULL_NUMBER: ${{ github.event.issue.number }}
         with:
