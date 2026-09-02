@@ -1,10 +1,27 @@
 {
   "name": "workspace-downloads",
   "displayName": "Workspace Downloads",
-  "description": "Download selected workspace files to a local desktop folder.",
+  "description": "Repeatable batch downloads of selected workspace files to your local machine, from remote or local VS Code workspaces.",
   "version": "1.0.0",
   "publisher": "jan-tielens",
   "license": "MIT",
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#003B4F",
+    "theme": "dark"
+  },
+  "keywords": [
+    "download",
+    "workspace",
+    "remote",
+    "batch",
+    "files",
+    "artifacts",
+    "logs",
+    "exports",
+    "codespaces",
+    "wsl"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/jantielens/vscode-workspace-downloads.git"

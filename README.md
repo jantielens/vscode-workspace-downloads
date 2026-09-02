@@ -1,8 +1,21 @@
 # Workspace Downloads
 
-Download files from your VS Code workspace to a folder on your local desktop. Use it to repeat the downloads you make for generated reports, logs, exports, and build artifacts.
+Repeatable batch downloads of selected workspace files to your local machine,
+from remote or local VS Code workspaces. Download one or more exact paths or glob
+matches at once, then save recurring download configuration in workspace settings
+for quick, repeated execution.
 
-It works with local folders and desktop VS Code windows connected through Remote SSH, Dev Containers, WSL, Remote Tunnels, or Codespaces. This is particularly useful when the files you need are in a remote development environment but the application that uses them is on your computer. Browser VS Code and web Codespaces are not supported.
+The extension works with local folders and desktop VS Code windows connected through Remote
+SSH, Dev Containers, WSL, Remote Tunnels, or Codespaces. This is particularly
+useful when the files you need are in a remote development environment but the
+application that uses them is on your computer. Browser VS Code and web
+Codespaces are not supported.
+
+## Why Workspace Downloads
+
+VS Code can download one file at a time from the Explorer view. Workspace Downloads is for recurring
+downloads: select one or more exact paths or glob matches, preserve their directory
+structure, and run the same configured download whenever you need fresh files.
 
 ## Demos
 
@@ -72,3 +85,4 @@ npm run package:vsix
 ```
 
 See [Contributing](CONTRIBUTING.md) and [Security](SECURITY.md).
+For help, see [Support](SUPPORT.md).
