@@ -2,6 +2,13 @@
 
 All notable changes are documented here.
 
+## 1.2.1 - 2026-09-04
+
+### Added
+
+* Show each downloaded file and its local output path, with an option to reveal the file in the file manager
+* Log the extension-host destination and copied output paths for download troubleshooting
+
 ## 1.2.0 - 2026-09-02
 
 ### Added

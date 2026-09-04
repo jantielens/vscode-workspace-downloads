@@ -89,7 +89,7 @@ For a complete build-script walkthrough, including PowerShell, Bash, and multipl
 
 ## Download Behavior
 
-Downloaded files retain their source-relative directory structure below the destination. When destination files already exist, or source paths differ only by letter casing, the default `prompt` policy lets you choose once per download whether to replace all, skip all, or cancel. The `replace` and `skip` policies handle all conflicts without a dialog. After a download, you can open the destination or view details in the `Workspace Downloads` output channel.
+Downloaded files retain their source-relative directory structure below the destination. When destination files already exist, or source paths differ only by letter casing, the default `prompt` policy lets you choose once per download whether to replace all, skip all, or cancel. The `replace` and `skip` policies handle all conflicts without a dialog. After a download, use **Show Downloaded Files** to view each local output path and reveal a selected file in the file manager. You can also open the destination or view details in the `Workspace Downloads` output channel.
 
 > [!NOTE]
 > Downloads read one complete source file into extension-host memory before writing it. Very large files can exhaust memory. Transfers can be cancelled between files, but not during a single file.
