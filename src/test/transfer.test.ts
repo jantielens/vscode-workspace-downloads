@@ -54,6 +54,7 @@ suite('Transfer', () => {
 		});
 		assert.strictEqual(result.completed, 1);
 		assert.strictEqual(result.skipped, 1);
+		assert.deepStrictEqual(result.copiedFiles, [{ relativePath: 'Readme.md', outputPath: path.join(root, 'Readme.md') }]);
 		assert.strictEqual(await fs.readFile(path.join(root, 'Readme.md'), 'utf8'), 'Readme.md');
 	});
 
@@ -103,6 +104,21 @@ suite('Transfer', () => {
 		assert.strictEqual(await fs.readFile(path.join(root, 'result.txt'), 'utf8'), 'result.txt');
 	});
 
+	test('logs the resolved destination and copied output path', async () => {
+		const files = await createSources(['result.txt']);
+		const logs: string[] = [];
+		await transferFiles({
+			destination: root,
+			files,
+			isCancellationRequested: () => false,
+			chooseConflict: async () => 'replace',
+			report: () => undefined,
+			log: (message) => logs.push(message),
+		});
+		assert.ok(logs.some((message) => message.includes(`input=${JSON.stringify(root)}`)));
+		assert.ok(logs.includes(`Copied result.txt to ${JSON.stringify(path.join(root, 'result.txt'))}`));
+	});
+
 	test('rejects an output path that traverses a symbolic link', async () => {
 		const files = await createSources(['linked/result.txt']);
 		const outside = await fs.mkdtemp(path.join(os.tmpdir(), 'workspace-downloads-outside-'));
@@ -128,7 +144,7 @@ suite('Transfer', () => {
 			report: () => undefined,
 			log: () => undefined,
 		});
-		assert.deepStrictEqual(result, { completed: 0, skipped: 0, failed: 0, cancelled: true });
+		assert.deepStrictEqual(result, { completed: 0, skipped: 0, failed: 0, cancelled: true, copiedFiles: [] });
 		await assert.rejects(fs.stat(path.join(root, 'result.txt')));
 	});
 

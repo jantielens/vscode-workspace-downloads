@@ -2,7 +2,7 @@
   "name": "workspace-downloads",
   "displayName": "Workspace Downloads",
   "description": "Repeatable batch downloads of selected workspace files to your local machine, from remote or local VS Code workspaces.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "publisher": "jan-tielens",
   "license": "MIT",
   "icon": "media/icon.png",

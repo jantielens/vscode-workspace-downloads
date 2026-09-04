@@ -19,6 +19,12 @@ export interface TransferResult {
 	readonly skipped: number;
 	readonly failed: number;
 	readonly cancelled: boolean;
+	readonly copiedFiles: readonly CopiedFile[];
+}
+
+export interface CopiedFile {
+	readonly relativePath: string;
+	readonly outputPath: string;
 }
 
 export interface TransferOptions {
@@ -45,15 +51,17 @@ export function chooseConflictForPolicy(
 
 export async function transferFiles(options: TransferOptions): Promise<TransferResult> {
 	const destination = await fs.realpath(options.destination);
+	options.log(`Transfer destination: input=${JSON.stringify(options.destination)}, resolved=${JSON.stringify(destination)}, platform=${process.platform}, cwd=${JSON.stringify(process.cwd())}`);
 	const plannedFiles = await planFiles(destination, options.files, options.log);
 	let policy: ConflictAction | undefined;
 	let completed = 0;
 	let skipped = 0;
 	let failed = 0;
+	const copiedFiles: CopiedFile[] = [];
 
 	for (const file of plannedFiles) {
 		if (options.isCancellationRequested()) {
-			return { completed, skipped, failed, cancelled: true };
+			return { completed, skipped, failed, cancelled: true, copiedFiles };
 		}
 		if (file.collision && !file.collisionWinner && policy === 'skip') {
 			skipped++;
@@ -65,7 +73,7 @@ export async function transferFiles(options: TransferOptions): Promise<TransferR
 		if (file.collision || exists) {
 			policy ??= await options.chooseConflict(file.relativePath);
 			if (policy === 'cancel') {
-				return { completed, skipped, failed, cancelled: true };
+				return { completed, skipped, failed, cancelled: true, copiedFiles };
 			}
 			if (policy === 'skip' && (exists || !file.collision || !file.collisionWinner)) {
 				skipped++;
@@ -75,15 +83,18 @@ export async function transferFiles(options: TransferOptions): Promise<TransferR
 		}
 
 		try {
+			options.log(`Copying ${file.relativePath} to ${JSON.stringify(file.outputPath)}`);
 			await copyFile(file, exists && policy === 'replace');
 			completed++;
+			copiedFiles.push({ relativePath: file.relativePath, outputPath: file.outputPath });
+			options.log(`Copied ${file.relativePath} to ${JSON.stringify(file.outputPath)}`);
 		} catch (error) {
 			failed++;
 			options.log(`Failed ${file.relativePath}: ${errorMessage(error)}`);
 		}
 		report(options, file.relativePath, completed, skipped, failed);
 	}
-	return { completed, skipped, failed, cancelled: false };
+	return { completed, skipped, failed, cancelled: false, copiedFiles };
 }
 
 async function planFiles(destination: string, files: readonly ResolvedFile[], log: (message: string) => void): Promise<PlannedFile[]> {

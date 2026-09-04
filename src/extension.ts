@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { reserveExport, selectSourceFolder, stateKey, taskDownloadFor, workspaceSetting } from './command-helpers';
 import { parseAdHocEntries, parseConfiguredEntries, resolveEntries } from './selection';
-import { chooseConflictForPolicy, ConflictAction, ConflictPolicy, transferFiles } from './transfer';
+import { chooseConflictForPolicy, ConflictAction, ConflictPolicy, CopiedFile, transferFiles } from './transfer';
 
 const output = vscode.window.createOutputChannel('Workspace Downloads');
 const exportState = { inProgress: false };
@@ -187,12 +187,15 @@ async function startDownload(
 		});
 		exportState.inProgress = false;
 		const action = await vscode.window.showInformationMessage(
-			`Workspace Downloads: ${result.completed} copied, ${result.skipped} skipped, ${result.failed} failed${result.cancelled ? ' (cancelled)' : ''}.`,
+			formatDownloadResult(result),
 			'Open Destination',
+			'Show Downloaded Files',
 			'Show Output',
 		);
 		if (action === 'Open Destination') {
 			await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(destination));
+		} else if (action === 'Show Downloaded Files') {
+			await showCopiedFiles(result.copiedFiles);
 		} else if (action === 'Show Output') {
 			output.show();
 		}
@@ -201,6 +204,22 @@ async function startDownload(
 		void vscode.window.showErrorMessage(`Workspace Downloads could not start: ${errorMessage(error)}`);
 	} finally {
 		exportState.inProgress = false;
+	}
+}
+
+export function formatDownloadResult(result: Awaited<ReturnType<typeof transferFiles>>): string {
+	const summary = `Workspace Downloads: ${result.completed} copied, ${result.skipped} skipped, ${result.failed} failed${result.cancelled ? ' (cancelled)' : ''}.`;
+	return result.copiedFiles.length > 0 ? `${summary} Source-relative folders were preserved below the selected destination.` : summary;
+}
+
+async function showCopiedFiles(files: readonly CopiedFile[]): Promise<void> {
+	const picked = await vscode.window.showQuickPick(files.map((file) => ({
+		label: file.relativePath,
+		description: file.outputPath,
+		file,
+	})), { placeHolder: 'Select a downloaded file to reveal it in the file manager' });
+	if (picked) {
+		await vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(picked.file.outputPath));
 	}
 }
 
